@@ -71,39 +71,31 @@ def png_2_pixels(fname):
 	return pixel_list
 
 # writes out the bits as binary to a file
-def bits_2_file(bits,fname):
-	f = open(fname,'wb')
-	idx=0
-	inc=8
-	while True:
-		char = ''.join(bits[idx:idx+inc])
-		f.write(chr(int(char,2)))
-		idx+=inc
-		if idx>=len(bits): break
-	f.close()
-	print("bits_2_file: Wrote %d bits to %s" % (len(bits),fname))
+def bits_2_file(bits, fname):
+    with open(fname, 'wb') as f:
+        idx = 0
+        inc = 8
+        while idx < len(bits):
+            char = ''.join(bits[idx:idx+inc])
+            b = int(char, 2)
+            f.write(bytes([b]))
+            idx += inc
+    print("bits_2_file: Wrote %d bits to %s" % (len(bits), fname))
 
 # returns a list of bits in the file
 def file_2_bits(fname):
-	bits = []
-	f = open(fname, "rb")
-	try:
-	    byte = f.read(1)
-	    while byte != "":
-	        cur_bits = bin(ord(byte))[2:]
-	        while len(cur_bits)<8:
-	        	cur_bits = "0"+cur_bits
-	        for b in cur_bits:
-	        	bits.append(b)
-	       	byte = f.read(1)
-	finally:
-	    f.close()
-	'''
-	first_char = ''.join(bits[:8])
-	n = int(first_char,2)
-	print(binascii.unhexlify('%x' % n))
-	'''
-	return bits
+    bits = []
+    with open(fname, "rb") as f:
+        byte = f.read(1)
+        while byte != b"":
+            cur_bits = bin(byte[0])[2:]
+            while len(cur_bits) < 8:
+                cur_bits = "0" + cur_bits
+            for b in cur_bits:
+                bits.append(b)
+            byte = f.read(1)
+    return bits
+
 
 # converts a list of 0/1 bits to pixels
 def bits_2_pixels(bits):
