@@ -14,9 +14,6 @@ import os,sys
 # for deleting folders
 from shutil import rmtree
 
-# for gif fps edit
-#from imageio import imread, mimsave
-
 four_k = (3840,2160)
 HD = (1920,1080)
 
@@ -33,24 +30,16 @@ def make_gif(parent_folder, fname):
             image = imageio.imread(os.path.join(parent_folder, filename))
             writer.append_data(image)
     return fname + ".gif"
-    
-    with imageio.get_writer(fname + ".gif", mode="I", duration=duration) as writer:
-        for filename in png_filenames:
-            image = imageio.imread(os.path.join(parent_folder, filename))
-            writer.append_data(image)
-    return fname + ".gif"
 
 # provided a list of pixels, writes it out as an image
 # with the specified resolution
 from PIL import Image, ImageDraw
 
-from PIL import Image, ImageDraw
-
 def pixels_2_png(pixels, fname, reso=(1920, 1080), scale=1):
     """
-    Создаёт изображение, где каждый пиксель (бит данных)
-    отрисовывается квадратом размера scale×scale пикселей.
-    Черный квадрат = 0, белый = 1.
+    Creates an image where each pixel (bit of data)
+    is drawn as a square of scale×scale pixels.
+    Black square = 0, white square = 1.
     """
     # Calculating the number of "logical pixels" along the axes
     width, height = reso
