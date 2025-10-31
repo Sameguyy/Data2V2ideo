@@ -14,6 +14,9 @@ import os,sys
 # for deleting folders
 from shutil import rmtree
 
+# for gif fps edit
+#from imageio import imread, mimsave
+
 four_k = (3840,2160)
 HD = (1920,1080)
 
@@ -21,54 +24,100 @@ HD = (1920,1080)
 # 0 is black pixel, white is 1
 
 # writes a gif in parent_folder made up of all it's sorted .png files
-def make_gif(parent_folder,fname):
-	items = os.listdir(parent_folder)
-	png_filenames = []
-	for elem in items:
-		if elem.find(".png")!=-1:
-			png_filenames.append(elem)
+def make_gif(parent_folder, fname):
+    items = os.listdir(parent_folder)
+    png_filenames = sorted([f for f in items if f.endswith(".png")])
 
-	sorted_png = []
-	while True:
-		lowest = 10000000
-		lowest_idx = -1
-		for p in png_filenames:
-			val = int(p.split("-")[1].split(".")[0])
-			if lowest_idx==-1 or val<lowest:
-				lowest = val
-				lowest_idx = png_filenames.index(p)
-		sorted_png.append(png_filenames[lowest_idx])
-		del png_filenames[lowest_idx]
-		if len(png_filenames)==0: break
-	png_filenames = sorted_png
-
-	with imageio.get_writer(fname+".gif", mode='I',duration=0.1) as writer:
-		for filename in png_filenames:
-			image = imageio.imread(parent_folder+"/"+filename)
-			writer.append_data(image)
-	return fname+".gif"
+    with imageio.get_writer(fname + ".gif", mode="I", duration=0.1) as writer:
+        for filename in png_filenames:
+            image = imageio.imread(os.path.join(parent_folder, filename))
+            writer.append_data(image)
+    return fname + ".gif"
+    
+    with imageio.get_writer(fname + ".gif", mode="I", duration=duration) as writer:
+        for filename in png_filenames:
+            image = imageio.imread(os.path.join(parent_folder, filename))
+            writer.append_data(image)
+    return fname + ".gif"
 
 # provided a list of pixels, writes it out as an image
 # with the specified resolution
-def pixels_2_png(pixels,fname,reso=four_k):
-	img = Image.new('RGB',reso)
-	img.putdata(pixels)
-	img.save(fname)
-	#print pixels[:16]
-	print("pixels_2_png: Saved to %d pixels to %s" % (len(pixels),fname))
+from PIL import Image, ImageDraw
+
+from PIL import Image, ImageDraw
+
+def pixels_2_png(pixels, fname, reso=(1920, 1080), scale=1):
+    """
+    Создаёт изображение, где каждый пиксель (бит данных)
+    отрисовывается квадратом размера scale×scale пикселей.
+    Черный квадрат = 0, белый = 1.
+    """
+    # Calculating the number of "logical pixels" along the axes
+    width, height = reso
+    logical_w = width // scale
+    logical_h = height // scale
+
+    img = Image.new("RGB", (width, height), (0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    idx = 0
+    for y in range(logical_h):
+        for x in range(logical_w):
+            if idx >= len(pixels):
+                break
+            color = pixels[idx]
+            x0 = x * scale
+            y0 = y * scale
+            draw.rectangle([x0, y0, x0 + scale - 1, y0 + scale - 1], fill=color)
+            idx += 1
+
+    img.save(fname)
+    print(f"pixels_2_png: Saved {len(pixels)} bits as {logical_w}x{logical_h} logical grid, each {scale}px -> {fname}")
+
+
+    img.save(fname)
+    print(f"pixels_2_png: Saved {len(pixels)} pixels (scale={scale}x) to {fname}")
+
 
 # provided a filename, reads the png and returns a list of pixels
-def png_2_pixels(fname):
-	im = Image.open(fname)
-	pixel_list = []
-	pixels = im.load()
-	width,height = im.size
-	for row in range(height):
-		for col in range(width):
-			pixel_list.append(pixels[col,row])
-	print("png_2_pixels: Read %d pixels from %s" % (len(pixel_list),fname))
-	#pixels_2_png(pixel_list,"test2.png")
-	return pixel_list
+from PIL import Image
+
+def png_2_pixels(fname, scale=1):
+    im = Image.open(fname)
+    im = im.convert('RGB')
+    width, height = im.size
+
+    # if scale = 1, the behavior is default 
+    if scale == 1:
+        pixels = list(im.getdata())
+        print(f"png_2_pixels: Read {len(pixels)} pixels from {fname}")
+        return pixels
+
+    logical_w = width // scale
+    logical_h = height // scale
+    pixels = []
+
+    for y in range(logical_h):
+        for x in range(logical_w):
+            # We take the average color of the square scale×scale
+            r_total = g_total = b_total = 0
+            for dy in range(scale):
+                for dx in range(scale):
+                    px = im.getpixel((x * scale + dx, y * scale + dy))
+                    r_total += px[0]
+                    g_total += px[1]
+                    b_total += px[2]
+            count = scale * scale
+            avg_r = r_total // count
+            avg_g = g_total // count
+            avg_b = b_total // count
+
+            # Deciding whether a square is black or white
+            color = (255, 255, 255) if avg_r > 127 else (0, 0, 0)
+            pixels.append(color)
+
+    print(f"png_2_pixels: Read {len(pixels)} logical pixels ({logical_w}x{logical_h}) from {fname} with scale={scale}")
+    return pixels
 
 # writes out the bits as binary to a file
 def bits_2_file(bits, fname):
