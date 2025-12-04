@@ -1,4 +1,4 @@
-Forked from - https://github.com/Sameguyy/Data2V2ideo
+Forked from - https://github.com/bfaure/Data2Video
 
 ------------------------------------------------------
 
